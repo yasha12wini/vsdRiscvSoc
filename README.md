@@ -63,6 +63,8 @@ export PATH=$HOME/<your-toolchain-folder>/bin:$PATH
 
 
 ---
+## Output Screenshot
+https://github.com/user-attachments/assets/10f38eca-cdc8-48d6-b4ab-714b4796f667
 
 ## Task 2: Basic RISC-V Compilation
 
