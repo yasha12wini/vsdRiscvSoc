@@ -7825,30 +7825,46 @@ riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -nostdlib -T linker.ld -o ba
 ![0](https://github.com/user-attachments/assets/1bfe6e9c-a549-4a03-a721-6dc83cb12657)
 
 ## Task 8:Compare -O0 vs -O2 Optimization in RISC-V
-bash
-Copy code
-# Compile with no optimizations (O0)
+🛠️ Compiling with Different Optimization Levels
+bash# Compile with no optimizations (-O0)
 riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O0 -S test.c -o test_O0.s
 
-# Compile with high-level optimizations (O2)
+# Compile with high-level optimizations (-O2)
 riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O2 -S test.c -o test_O2.s
-🔍 What to Observe in Assembly (test_O0.s vs test_O2.s):
--O0: Keeps all code as written. Function calls, stack usage, and variables are fully preserved.
+🔍 What to Observe in Assembly (test_O0.s vs test_O2.s)
 
--O2: Optimizes for performance:
+-O0:
 
-Dead Code Elimination: Removes unused variables or expressions.
+Preserves all code exactly as written
+Includes full function calls, stack setup, and variable usage
+Useful for debugging and step-by-step learning
 
-Inlining: Replaces small function calls with their body code.
 
-Register Allocation: Uses fewer stack operations by better register use.
+-O2:
 
-📄 Open both .s files side-by-side in VS Code:
+Optimizes the code for performance
+Performs several optimizations:
 
-bash
-Copy code
-code test_O0.s test_O2.s
+🔸 Dead Code Elimination: removes unused variables or expressions
+🔸 Inlining: replaces small function calls with their code body
+🔸 Register Allocation: minimizes stack use by using registers efficiently
 
+
+
+
+
+📄 Open Both Assembly Files Side-by-Side in VS Code
+bashcode test_O0.s test_O2.s
+Analysis Tips
+
+Count the instructions: -O2 typically produces fewer instructions
+Check stack usage: Look for differences in stack pointer manipulation
+Function calls: Notice if small functions are inlined in the -O2 version
+Register usage: -O2 should show more efficient register allocation
+Loop optimizations: Look for loop unrolling or other loop optimizations
+
+Expected Differences
+Aspect-O0-O2Code SizeLargerSmaller (usually)ReadabilityHighLowerDebug InfoCompleteOptimized awayPerformanceSlowerFasterCompilation TimeFastSlower
 
 ---
 ## Output Screenshot
