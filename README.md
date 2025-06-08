@@ -94,7 +94,6 @@ file hello.elf
 ```
 hello.elf: ELF 32-bit LSB executable, UCB RISC-V, RVC, soft-float ABI, version 1 (SYSV), statically linked, not stripped
 ```
-https://github.com/user-attachments/assets/d628f1cc-7836-409e-b105-50ff5acd08ac
 ### Compilation with specific architecture (if needed)
 ```bash
 # This might fail with multilib error
@@ -103,6 +102,7 @@ riscv32-unknown-elf-gcc -march=rv32imc -mabi=ilp32 -o hello.elf hello.c
 ```
 
 ---
+## Output Screenshot
 
 ## Task 3: Generate Assembly Code
 
