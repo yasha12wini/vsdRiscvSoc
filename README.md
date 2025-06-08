@@ -9159,7 +9159,7 @@ int main() {
     return 0;
 }
 ```
-
+![0](https://github.com/user-attachments/assets/5a357617-4b07-4b1b-93f3-8b774c809be2)
 ### Key Points
 
 #### Memory-Mapped UART Considerations
@@ -9189,9 +9189,8 @@ int main() {
 | Linker errors | Use appropriate `-specs` or `-nostartfiles` |
 ```
 
----
-## Output ScreenShot
-![0](https://github.com/user-attachments/assets/5a357617-4b07-4b1b-93f3-8b774c809be2)
+
+
 ```
 
 ## Task 17: Endianness Testing
