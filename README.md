@@ -105,6 +105,7 @@ riscv32-unknown-elf-gcc -march=rv32imc -mabi=ilp32 -o hello.elf hello.c
 
 ---
 ## Output Screenshot
+https://github.com/user-attachments/assets/d628f1cc-7836-409e-b105-50ff5acd08ac
 
 ## Task 3: Generate Assembly Code
 
@@ -187,6 +188,8 @@ riscv32-unknown-elf-objdump -D -b binary -m riscv32 hello.bin > hello.disasm
 **Note:** hello.asm and hello.disasm files are attached separately due to length.
 
 ---
+## Output Screenshot
+![0](https://github.com/user-attachments/assets/53e54dcf-d509-4dba-a956-70cedcf2ef09)
 
 ## Task 5: RISC-V Register Reference
 
