@@ -27,8 +27,39 @@ echo 'export PATH=$HOME/riscv_custom_tools/bin:$PATH' >> ~/.bashrc
 
 ---
 
-## Task 1: [To be completed]
+## Task 1: 
+Absolutely! Here's a clean, copy-paste-ready set of commands to **unpack**, **set up**, and **verify** the RISC-V RV32IMAC toolchain for your GitHub README:
+
+---
+
+### 🚀 Install RISC-V Toolchain (RV32IMAC)
+
+```bash
+# 1. Extract the prebuilt toolchain archive
 tar -xzf riscv-toolchain-rv32imac-x86_64-ubuntu.tar.gz -C $HOME
+
+# 2. Add the toolchain to your PATH temporarily
+export PATH=$HOME/riscv/bin:$PATH
+
+# 3. (Optional) Add to ~/.bashrc to make it permanent
+echo 'export PATH=$HOME/riscv/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# 4. Verify installation
+riscv32-unknown-elf-gcc --version
+riscv32-unknown-elf-objdump --version
+riscv32-unknown-elf-gdb --version
+```
+
+---
+
+✅ Make sure the extracted directory is actually `$HOME/riscv`. If it's named differently (e.g., `riscv-toolchain`), update the `PATH` accordingly:
+
+```bash
+export PATH=$HOME/<your-toolchain-folder>/bin:$PATH
+```
+
+Let me know if you'd like a similar block for running on Spike or compiling C programs for RV32.
 
 
 ---
