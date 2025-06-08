@@ -8280,7 +8280,40 @@ int main(void) {
 nano complete_linker.ld
 ```
 
-**Note:** complete_linker.ld code to be attached.
+# RISC-V Linker Script Template
+
+## Basic Linker Script (`linker.ld`)
+
+```ld
+ENTRY(_start)
+
+MEMORY {
+   FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 64K
+   RAM (rwx)  : ORIGIN = 0x10000000, LENGTH = 8K
+}
+
+SECTIONS {
+   .text : {
+       *(.text*)
+       *(.rodata*)
+   } > FLASH
+   
+   __data_load_start = LOADADDR(.data);
+   
+   .data : {
+       __data_start = .;
+       *(.data*)
+       *(.sdata*)
+       __data_end = .;
+   } > RAM AT > FLASH
+   
+   .bss : {
+       __bss_start = .;
+       *(.bss*)
+       *(.sbss*)
+       __bss_end = .;
+   } > RAM
+}
 
 ### Build Complete System
 ```bash
