@@ -64,7 +64,8 @@ export PATH=$HOME/<your-toolchain-folder>/bin:$PATH
 
 ---
 ## Output Screenshot
-https://github.com/user-attachments/assets/10f38eca-cdc8-48d6-b4ab-714b4796f667
+
+![0](https://github.com/user-attachments/assets/0d5e79dc-c389-443f-a568-9e2fe28e66fe)
 
 ## Task 2: Basic RISC-V Compilation
 
@@ -703,6 +704,8 @@ riscv32-unknown-elf-readelf -S complete.elf
 
 ---
 ## Output Screenshot
+![0](https://github.com/user-attachments/assets/0b9978e9-c8c0-44e9-8a7c-839fa21b4e23)
+![0](https://github.com/user-attachments/assets/98eb340d-3933-4bc0-8e10-117c80e634df)
 
 ## Task 13: Interrupt Handling and Timers
 
@@ -736,6 +739,10 @@ riscv32-unknown-elf-objdump -d timer_interrupt.elf | grep -E "(csrr|csrw|csrs)" 
 **Note:** timer_demo.c, crt0_interrupt.S, and interrupt_linker.ld codes to be attached.
 
 ---
+## Output ScreenShot
+![0](https://github.com/user-attachments/assets/83c650a3-a4c9-4312-be33-53ffb9f21469)
+![0](https://github.com/user-attachments/assets/1083ab97-19f5-4dbe-9e63-1b1b1528e779)
+![0](https://github.com/user-attachments/assets/22fddc4f-40fa-40dc-9eca-8289499dc164)
 
 ## Task 14: Atomic Operations and Load-Reserved/Store-Conditional
 
@@ -778,6 +785,8 @@ qemu-riscv32 ./atomic_counter
 **Note:** atomic_test.s, lr_sc_test.s, and atomic_counter.c codes to be attached.
 
 ---
+## Output ScreenShot
+![0](https://github.com/user-attachments/assets/9e220505-176a-475b-b3a5-41b7a9c53d8b)
 
 ## Task 15: Mutex Implementation with Atomic Operations
 
@@ -818,11 +827,19 @@ done
 **Note:** rv32_mutex.c and rv32_mutex_concurrent.c codes to be attached.
 
 ---
+## Output ScreenShot
+![0](https://github.com/user-attachments/assets/ce851c17-a37d-4785-9fa5-83dddd7965ad)
+![0](https://github.com/user-attachments/assets/506e6600-2c5a-4b90-ac56-984a11fd8bef)
+![0](https://github.com/user-attachments/assets/95fe9dda-8734-45e8-85cb-3836ea9c0a82)
+![0](https://github.com/user-attachments/assets/5b37204d-1990-4c92-84c4-b61ccbc00a67)
 
 ## Task 16: [To be completed]
 *Placeholder for Task 16 content*
 
 ---
+## Output ScreenShot
+![0](https://github.com/user-attachments/assets/5a357617-4b07-4b1b-93f3-8b774c809be2)
+
 
 ## Task 17: Endianness Testing
 
@@ -843,6 +860,10 @@ riscv32-unknown-linux-gnu-gcc -march=rv32imac -mabi=ilp32 -static -o endian_test
 # Run with QEMU
 qemu-riscv32 endian_test
 ```
+## Output ScreenShot
+![0](https://github.com/user-attachments/assets/42032f17-f292-4162-b714-b52f5a414c80)
+
+![0](https://github.com/user-attachments/assets/d25e5004-f07e-4774-a2bd-45382721ea19)
 
 **Note:** endian_test.c code to be attached.
 
@@ -966,20 +987,3 @@ The combination of theoretical knowledge and practical implementation provides a
 
 ---
 
-## Files to be Attached
-
-The following code files are referenced in this guide and should be attached separately:
-
-1. **hello.asm** - Disassembled hello world (Task 4)
-2. **hello.disasm** - Binary disassembly output (Task 4)
-3. **gpio_demo.c** - GPIO simulation code (Task 10)
-4. **complete_linker.ld** - Complete linker script (Task 12)
-5. **timer_demo.c** - Timer interrupt demo (Task 13)
-6. **crt0_interrupt.S** - Interrupt startup code (Task 13)
-7. **interrupt_linker.ld** - Interrupt linker script (Task 13)
-8. **atomic_test.s** - Atomic assembly test (Task 14)
-9. **lr_sc_test.s** - Load-reserved/store-conditional test (Task 14)
-10. **atomic_counter.c** - Atomic counter implementation (Task 14)
-11. **rv32_mutex.c** - Basic mutex implementation (Task 15)
-12. **rv32_mutex_concurrent.c** - Concurrent mutex test (Task 15)
-13. **endian_test.c** - Endianness testing code (Task 17)
