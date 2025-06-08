@@ -105,6 +105,8 @@ riscv32-unknown-elf-gcc -march=rv32imc -mabi=ilp32 -o hello.elf hello.c
 
 ---
 ## Output Screenshot
+![0](https://github.com/user-attachments/assets/8bdb3ca3-ad3d-4b86-848c-5c8b198e3af0)
+
 https://github.com/user-attachments/assets/d628f1cc-7836-409e-b105-50ff5acd08ac
 
 ## Task 3: Generate Assembly Code
@@ -154,6 +156,10 @@ jr ra
 ```
 
 ---
+## Output Screenshot
+
+!![0](https://github.com/user-attachments/assets/9eb820a6-24e9-408b-aefc-4681c1ea1a0c)
+[0](https://github.com/user-attachments/assets/b7a47f7e-6fdd-4bd7-8dd8-bf33e8512c3f)
 
 ## Task 4: Binary Analysis and Disassembly
 
@@ -189,6 +195,8 @@ riscv32-unknown-elf-objdump -D -b binary -m riscv32 hello.bin > hello.disasm
 
 ---
 ## Output Screenshot
+![0](https://github.com/user-attachments/assets/292248cb-7399-4759-969c-7eaaef374b78)
+
 ![0](https://github.com/user-attachments/assets/53e54dcf-d509-4dba-a956-70cedcf2ef09)
 
 ## Task 5: RISC-V Register Reference
@@ -291,6 +299,9 @@ disassemble                  # see assembly
 ```
 
 ---
+## Output Screenshot
+![0](https://github.com/user-attachments/assets/89bc18d6-3228-46c3-a6c0-16ab4f5e190d)
+![0](https://github.com/user-attachments/assets/371684e6-0060-4887-a46e-1fb87f860a74)
 
 ## Task 6 (Extended): Build RISC-V Proxy Kernel (pk)
 
@@ -375,11 +386,16 @@ riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -nostdlib -T linker.ld -o ba
 **Note:** start.S, linker.ld, and bare_code.c files to be attached.
 
 ---
+## Output Screenshot
+![0](https://github.com/user-attachments/assets/1bfe6e9c-a549-4a03-a721-6dc83cb12657)
 
 ## Task 8: [Placeholder]
 *Content for Task 8*
 
 ---
+## Output Screenshot
+![0](https://github.com/user-attachments/assets/d1b1b9bd-1fc4-403d-9a17-adefd6a5c47c)
+![0](https://github.com/user-attachments/assets/33da8719-577c-4af4-91fb-c316f0242ad7)
 
 ## Task 9: Cycle Counter and Performance Testing
 
@@ -432,6 +448,8 @@ spike --isa=rv32imac_zicntr $HOME/riscv_custom_tools/riscv32-unknown-elf/bin/pk 
 ```
 
 ---
+## Output Screenshot
+![0](https://github.com/user-attachments/assets/1305f767-fa19-42ee-bc4a-d76644ba8808)
 
 ## Task 10: GPIO Simulation
 
@@ -452,6 +470,9 @@ spike --isa=rv32imac_zicntr $HOME/riscv_custom_tools/riscv32-unknown-elf/bin/pk 
 **Note:** gpio_demo.c code to be attached.
 
 ---
+## Output Screenshot
+![0](https://github.com/user-attachments/assets/19d4a74c-fa7b-47b2-a375-b03136a79940)
+
 
 ## Task 11: Memory Layout and Linker Scripts
 
@@ -530,6 +551,10 @@ The address separation between `.text` (0x00000000) and `.data` (0x10000000) ref
 The large address gap (256MB) ensures clear memory region separation, preventing accidental overlap and allowing memory management units to apply different access permissions and caching policies to each region.
 
 ---
+
+## Output Screenshot
+![0](https://github.com/user-attachments/assets/81e5e111-93dd-4e34-be20-e6734416d334)
+![0](https://github.com/user-attachments/assets/6963aad0-48bc-4dcc-a574-1813b94a4b69)
 
 ## Task 12: C Runtime Startup (crt0.S)
 
@@ -677,6 +702,7 @@ riscv32-unknown-elf-readelf -S complete.elf
 ```
 
 ---
+## Output Screenshot
 
 ## Task 13: Interrupt Handling and Timers
 
