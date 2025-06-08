@@ -8561,25 +8561,9 @@ echo 'export PATH=$HOME/riscv_custom_tools/bin:$PATH' >> ~/.bashrc
 
 ---
 
-## Task 1: Install RISC-V Toolchain (RV32IMAC)
 
-### 🚀 Install RISC-V Toolchain (RV32IMAC)
-```bash
-# 1. Extract the prebuilt toolchain archive
-tar -xzf riscv-toolchain-rv32imac-x86_64-ubuntu.tar.gz -C $HOME
 
-# 2. Add the toolchain to your PATH temporarily
-export PATH=$HOME/riscv/bin:$PATH
 
-# 3. (Optional) Add to ~/.bashrc to make it permanent
-echo 'export PATH=$HOME/riscv/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
-
-# 4. Verify installation
-riscv32-unknown-elf-gcc --version
-riscv32-unknown-elf-objdump --version
-riscv32-unknown-elf-gdb --version
-```
 
 ---
 
