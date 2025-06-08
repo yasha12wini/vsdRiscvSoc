@@ -28,7 +28,8 @@ echo 'export PATH=$HOME/riscv_custom_tools/bin:$PATH' >> ~/.bashrc
 ---
 
 ## Task 1: [To be completed]
-*Placeholder for Task 1 content*
+tar -xzf riscv-toolchain-rv32imac-x86_64-ubuntu.tar.gz -C $HOME
+
 
 ---
 
