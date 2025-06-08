@@ -8471,8 +8471,465 @@ done
 ![0](https://github.com/user-attachments/assets/95fe9dda-8734-45e8-85cb-3836ea9c0a82)
 ![0](https://github.com/user-attachments/assets/5b37204d-1990-4c92-84c4-b61ccbc00a67)
 
-## Task 16: [To be completed]
-*Placeholder for Task 16 content*
+## Task 16:
+```markdown
+# RISC-V Development Guide - Complete Tutorial
+
+## Prerequisites and Setup
+
+### Install RISC-V Toolchain
+```bash
+# Download and install RISC-V GNU toolchain
+sudo apt-get update
+sudo apt-get install gcc-riscv64-linux-gnu gcc-riscv64-unknown-elf
+
+# Or for 32-bit specifically:
+sudo apt-get install gcc-riscv32-unknown-elf gcc-riscv32-unknown-linux-gnu
+
+# Install QEMU for RISC-V emulation
+sudo apt-get install qemu-system-riscv32 qemu-system-riscv64 qemu-user
+
+# Install additional dependencies
+sudo apt-get install libboost-regex1.74.0 libboost-system1.74.0 libboost-filesystem1.74.0
+```
+
+### Set up PATH
+```bash
+# Add toolchain to PATH
+export PATH=$HOME/riscv_custom_tools/bin:$PATH
+export PATH=~/Downloads/riscv/bin:$PATH
+echo 'export PATH=$HOME/riscv_custom_tools/bin:$PATH' >> ~/.bashrc
+```
+
+---
+
+## Task 1: Install RISC-V Toolchain (RV32IMAC)
+
+### 🚀 Install RISC-V Toolchain (RV32IMAC)
+```bash
+# 1. Extract the prebuilt toolchain archive
+tar -xzf riscv-toolchain-rv32imac-x86_64-ubuntu.tar.gz -C $HOME
+
+# 2. Add the toolchain to your PATH temporarily
+export PATH=$HOME/riscv/bin:$PATH
+
+# 3. (Optional) Add to ~/.bashrc to make it permanent
+echo 'export PATH=$HOME/riscv/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# 4. Verify installation
+riscv32-unknown-elf-gcc --version
+riscv32-unknown-elf-objdump --version
+riscv32-unknown-elf-gdb --version
+```
+
+---
+
+## Task 8: Compare `-O0` vs `-O2` Optimization in RISC-V
+
+### 🛠️ Compiling with Different Optimization Levels
+
+```bash
+# Compile with no optimizations (-O0)
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O0 -S test.c -o test_O0.s
+
+# Compile with high-level optimizations (-O2)
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O2 -S test.c -o test_O2.s
+```
+
+### 🔍 What to Observe in Assembly (`test_O0.s` vs `test_O2.s`)
+
+* **`-O0`:**
+   * Preserves all code exactly as written
+   * Includes full function calls, stack setup, and variable usage
+   * Useful for debugging and step-by-step learning
+
+* **`-O2`:**
+   * Optimizes the code for performance
+   * Performs several optimizations:
+      * 🔸 *Dead Code Elimination*: removes unused variables or expressions
+      * 🔸 *Inlining*: replaces small function calls with their code body
+      * 🔸 *Register Allocation*: minimizes stack use by using registers efficiently
+
+### 📄 Open Both Assembly Files Side-by-Side in VS Code
+
+```bash
+code test_O0.s test_O2.s
+```
+
+### Analysis Tips
+1. **Count the instructions**: `-O2` typically produces fewer instructions
+2. **Check stack usage**: Look for differences in stack pointer manipulation
+3. **Function calls**: Notice if small functions are inlined in the `-O2` version
+4. **Register usage**: `-O2` should show more efficient register allocation
+5. **Loop optimizations**: Look for loop unrolling or other loop optimizations
+
+### Expected Differences
+
+| Aspect | `-O0` | `-O2` |
+|--------|-------|-------|
+| Code Size | Larger | Smaller (usually) |
+| Readability | High | Lower |
+| Debug Info | Complete | Optimized away |
+| Performance | Slower | Faster |
+| Compilation Time | Fast | Slower |
+
+---
+
+## RISC-V Linker Script Template
+
+### Basic Linker Script (`linker.ld`)
+
+```ld
+ENTRY(_start)
+
+MEMORY {
+    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 64K
+    RAM (rwx)  : ORIGIN = 0x10000000, LENGTH = 8K
+}
+
+SECTIONS {
+    .text : {
+        *(.text*)
+        *(.rodata*)
+    } > FLASH
+    
+    __data_load_start = LOADADDR(.data);
+    
+    .data : {
+        __data_start = .;
+        *(.data*)
+        *(.sdata*)
+        __data_end = .;
+    } > RAM AT > FLASH
+    
+    .bss : {
+        __bss_start = .;
+        *(.bss*)
+        *(.sbss*)
+        __bss_end = .;
+    } > RAM
+}
+```
+
+### Linker Script Explanation
+
+#### Memory Layout
+- **FLASH**: Code and constants stored in non-volatile memory
+  - Origin: `0x00000000` 
+  - Size: `64K` (65,536 bytes)
+  - Permissions: `rx` (read + execute)
+
+- **RAM**: Variables and stack in volatile memory  
+  - Origin: `0x10000000`
+  - Size: `8K` (8,192 bytes)
+  - Permissions: `rwx` (read + write + execute)
+
+#### Section Mapping
+
+##### `.text` Section
+```ld
+.text : {
+    *(.text*)     // All code sections
+    *(.rodata*)   // All read-only data (constants, strings)
+} > FLASH
+```
+- Contains executable code and constants
+- Stored in FLASH memory
+- Automatically loaded at startup
+
+##### `.data` Section  
+```ld
+__data_load_start = LOADADDR(.data);
+
+.data : {
+    __data_start = .;
+    *(.data*)     // Initialized global variables
+    *(.sdata*)    // Small initialized data
+    __data_end = .;
+} > RAM AT > FLASH
+```
+- Contains initialized global/static variables
+- **Stored in FLASH** but **copied to RAM** at startup
+- Requires startup code to copy from FLASH to RAM
+
+##### `.bss` Section
+```ld
+.bss : {
+    __bss_start = .;
+    *(.bss*)      // Uninitialized global variables  
+    *(.sbss*)     // Small uninitialized data
+    __bss_end = .;
+} > RAM
+```
+- Contains uninitialized global/static variables
+- Located in RAM only
+- Must be zero-initialized by startup code
+
+### Usage with GCC
+
+#### Compile and Link
+```bash
+# Compile source files
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -c main.c -o main.o
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -c startup.s -o startup.o
+
+# Link with custom linker script
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -nostartfiles \
+    -T linker.ld main.o startup.o -o program.elf
+```
+
+#### Required Startup Code Symbols
+Your startup assembly must handle data copying:
+
+```assembly
+# startup.s example
+.globl _start
+_start:
+    # Copy .data section from FLASH to RAM
+    la t0, __data_load_start  # Source address in FLASH
+    la t1, __data_start       # Destination address in RAM  
+    la t2, __data_end         # End of data section
+    
+copy_data:
+    beq t1, t2, zero_bss      # If start == end, skip
+    lw t3, 0(t0)              # Load from FLASH
+    sw t3, 0(t1)              # Store to RAM
+    addi t0, t0, 4            # Increment source
+    addi t1, t1, 4            # Increment destination
+    j copy_data
+    
+zero_bss:
+    # Zero .bss section
+    la t0, __bss_start
+    la t1, __bss_end
+    
+clear_bss:
+    beq t0, t1, main_call
+    sw zero, 0(t0)
+    addi t0, t0, 4
+    j clear_bss
+    
+main_call:
+    call main                 # Jump to main function
+```
+
+### Memory Map Verification
+
+#### Check Section Addresses
+```bash
+# View section information
+riscv32-unknown-elf-objdump -h program.elf
+
+# Check symbol addresses  
+riscv32-unknown-elf-nm program.elf | grep -E "__(data|bss)_"
+```
+
+#### Expected Output
+```
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         00001000  00000000  00000000  00001000  2**2
+  1 .data         00000100  10000000  00001000  00002000  2**2  
+  2 .bss          00000200  10000100  10000100  00000000  2**2
+```
+
+### Customization Notes
+
+#### Adjust Memory Sizes
+```ld
+MEMORY {
+    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 128K  // Increase FLASH
+    RAM (rwx)  : ORIGIN = 0x10000000, LENGTH = 32K   // Increase RAM  
+}
+```
+
+#### Add Stack and Heap
+```ld
+SECTIONS {
+    /* ... existing sections ... */
+    
+    .heap : {
+        __heap_start = .;
+        . += 0x1000;          // 4KB heap
+        __heap_end = .;
+    } > RAM
+    
+    .stack : {
+        . += 0x800;           // 2KB stack  
+        __stack_top = .;
+    } > RAM
+}
+```
+
+#### RISC-V Specific Sections
+```ld
+.text : {
+    *(.text.init)             // Initialization code first
+    *(.text*)
+    *(.rodata*)
+} > FLASH
+```
+
+---
+
+## Using Newlib printf Without an OS
+
+### Question
+"How do I retarget `_write` so that printf sends bytes to my memory-mapped UART?"
+
+### Answer Outline
+
+#### Step 1: Implement `_write` Function
+Create a custom `_write()` function that redirects output to your UART:
+
+```c
+// syscalls.c or retarget.c
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+
+// Define your UART base address
+#define UART_BASE_ADDR 0x10000000
+#define UART_TX_REG    (*(volatile uint32_t*)(UART_BASE_ADDR + 0x00))
+#define UART_STATUS    (*(volatile uint32_t*)(UART_BASE_ADDR + 0x04))
+#define UART_TX_READY  (1 << 5)  // TX ready bit
+
+// Implement _write system call
+int _write(int fd, char* buf, int len) {
+    int i;
+    
+    // Only handle stdout and stderr
+    if (fd == 1 || fd == 2) {
+        for (i = 0; i < len; i++) {
+            // Wait until UART is ready to transmit
+            while (!(UART_STATUS & UART_TX_READY)) {
+                // Busy wait for TX ready
+            }
+            
+            // Send byte to UART
+            UART_TX_REG = buf[i];
+            
+            // Handle newline conversion (optional)
+            if (buf[i] == '\n') {
+                while (!(UART_STATUS & UART_TX_READY)) {
+                    // Wait for TX ready
+                }
+                UART_TX_REG = '\r';  // Send carriage return
+            }
+        }
+        return len;  // Return number of bytes written
+    }
+    
+    // For other file descriptors, return error
+    errno = EBADF;
+    return -1;
+}
+```
+
+#### Step 2: Implement Other Required System Calls
+
+```c
+// Additional system calls required by newlib
+int _close(int fd) {
+    return -1;
+}
+
+int _fstat(int fd, struct stat* st) {
+    st->st_mode = S_IFCHR;
+    return 0;
+}
+
+int _isatty(int fd) {
+    return 1;  // Assume all file descriptors are TTY
+}
+
+off_t _lseek(int fd, off_t ptr, int dir) {
+    return 0;
+}
+
+int _read(int fd, char* ptr, int len) {
+    return 0;  // No input implementation
+}
+
+// Heap management (if using malloc)
+extern char _end;  // Defined by linker
+static char* heap_ptr = &_end;
+
+void* _sbrk(int incr) {
+    char* prev_heap = heap_ptr;
+    heap_ptr += incr;
+    return prev_heap;
+}
+```
+
+#### Step 3: Compile and Link with Custom System Calls
+
+```bash
+# Compile your main program and syscalls
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -c main.c -o main.o
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -c syscalls.c -o syscalls.o
+
+# Link with -nostartfiles and include your syscalls
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -nostartfiles -T linker.ld \
+    main.o syscalls.o -o program.elf
+```
+
+#### Step 4: Alternative Method - Using `-specs=nosys.specs`
+
+```bash
+# Use nosys specs to avoid undefined syscalls
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -specs=nosys.specs \
+    main.c syscalls.c -T linker.ld -o program.elf
+```
+
+#### Step 5: Test Your printf Implementation
+
+```c
+// main.c
+#include <stdio.h>
+
+int main() {
+    printf("Hello, RISC-V World!\n");
+    printf("Counter: %d\n", 42);
+    printf("Hex value: 0x%08x\n", 0xDEADBEEF);
+    
+    while(1) {
+        // Main loop
+    }
+    
+    return 0;
+}
+```
+
+### Key Points
+
+#### Memory-Mapped UART Considerations
+- **UART Base Address**: Update `UART_BASE_ADDR` to match your hardware
+- **Register Offsets**: Adjust `UART_TX_REG` and `UART_STATUS` offsets
+- **Status Bits**: Modify `UART_TX_READY` bit mask for your UART controller
+- **Polling vs Interrupts**: This implementation uses polling; consider interrupt-driven I/O for better performance
+
+#### Linking Options
+- **`-nostartfiles`**: Skip standard system startup files
+- **`-specs=nosys.specs`**: Use "no system" specifications
+- **Custom Linker Script**: Ensure proper memory layout with `linker.ld`
+
+#### Debug Tips
+1. **Verify UART Configuration**: Ensure UART is properly initialized before calling printf
+2. **Check Memory Map**: Confirm UART addresses match your SoC documentation  
+3. **Test Simple Output**: Start with single character output before using printf
+4. **Linker Symbols**: Make sure `_end` symbol is defined in your linker script
+
+#### Common Issues and Solutions
+
+| Issue | Solution |
+|-------|----------|
+| `undefined reference to '_write'` | Include syscalls.c in compilation |
+| No output on UART | Verify UART initialization and base address |
+| Garbled output | Check baud rate and UART configuration |
+| Linker errors | Use appropriate `-specs` or `-nostartfiles` |
+```
 
 ---
 ## Output ScreenShot
@@ -8503,8 +8960,129 @@ qemu-riscv32 endian_test
 
 ![0](https://github.com/user-attachments/assets/d25e5004-f07e-4774-a2bd-45382721ea19)
 
-**Note:** endian_test.c code to be attached.
+**endian_test.c ** 
+```c
+Conversation opened. 1 read message. 
 
+Skip to content
+Using Vellore Institute of Technology Mail with screen readers
+
+2 of 9,497
+(no subject)
+Inbox
+
+Yashawini Venkatasubramaniam 22BEC1253 <yashawini.v2022@vitstudent.ac.in>
+Attachments
+11:04 PM (12 minutes ago)
+to me
+
+
+ 5 Attachments
+  •  Scanned by Gmail
+// endian_test.c - RISC-V Endianness Verification
+#include <stdio.h>
+#include <stdint.h>
+
+// Union to overlay uint32_t with byte array
+union endian_test {
+    uint32_t word;      // 32-bit word
+    uint8_t bytes[4];   // 4 individual bytes
+};
+
+// Function to print binary representation
+void print_binary(uint32_t value) {
+    printf("Binary: ");
+    for (int i = 31; i >= 0; i--) {
+        printf("%d", (value >> i) & 1);
+        if (i % 8 == 0) printf(" ");
+    }
+    printf("\n");
+}
+
+// Function to determine endianness
+const char* get_endianness() {
+    union endian_test test;
+    test.word = 0x01020304;
+    
+    if (test.bytes[0] == 0x04) {
+        return "Little-endian";
+    } else if (test.bytes[0] == 0x01) {
+        return "Big-endian";
+    } else {
+        return "Unknown";
+    }
+}
+
+int main() {
+    printf("=== RISC-V RV32IMAC Endianness Test ===\n\n");
+    
+    // Create union instance
+    union endian_test test;
+    
+    // Store the test value
+    test.word = 0x01020304;
+    
+    printf("Test value: 0x%08X\n", test.word);
+    print_binary(test.word);
+    printf("\n");
+    
+    // Print memory layout
+    printf("Memory layout (address -> byte):\n");
+    printf("Address  | Byte Value | Hex\n");
+    printf("---------|------------|----\n");
+    
+    for (int i = 0; i < 4; i++) {
+        printf("bytes[%d] | %3d        | 0x%02X\n", 
+               i, test.bytes[i], test.bytes[i]);
+    }
+    
+    printf("\nByte ordering analysis:\n");
+    printf("If little-endian: bytes[0] should be 0x04 (LSB first)\n");
+    printf("If big-endian:    bytes[0] should be 0x01 (MSB first)\n");
+    printf("\nActual bytes[0] = 0x%02X\n", test.bytes[0]);
+    
+    // Determine and print endianness
+    printf("\nResult: This system is %s\n", get_endianness());
+    
+    // Additional verification with different values
+    printf("\n=== Additional Tests ===\n");
+    
+    uint32_t test_values[] = {0x12345678, 0xDEADBEEF, 0xCAFEBABE};
+    int num_tests = sizeof(test_values) / sizeof(test_values[0]);
+    
+    for (int i = 0; i < num_tests; i++) {
+        test.word = test_values[i];
+        printf("\nValue: 0x%08X\n", test.word);
+        printf("Bytes: [0x%02X, 0x%02X, 0x%02X, 0x%02X]\n",
+               test.bytes[0], test.bytes[1], test.bytes[2], test.bytes[3]);
+    }
+    
+    // Show struct packing example
+    printf("\n=== Struct Packing Example ===\n");
+    
+    struct packed_struct {
+        uint8_t  byte1;
+        uint16_t word1;
+        uint8_t  byte2;
+        uint32_t word2;
+    } __attribute__((packed));
+    
+    struct normal_struct {
+        uint8_t  byte1;
+        uint16_t word1;
+        uint8_t  byte2;
+        uint32_t word2;
+    };
+    
+    printf("Normal struct size: %zu bytes\n", sizeof(struct normal_struct));
+    printf("Packed struct size: %zu bytes\n", sizeof(struct packed_struct));
+    
+    return 0;
+}
+endian_test.c
+Displaying endian_test.c.
+
+```
 ---
 
 ## Useful Commands Reference
