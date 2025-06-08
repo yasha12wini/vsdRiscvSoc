@@ -7825,12 +7825,18 @@ riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -nostdlib -T linker.ld -o ba
 ![0](https://github.com/user-attachments/assets/1bfe6e9c-a549-4a03-a721-6dc83cb12657)
 
 ## Task 8: [Placeholder]
-*Content for Task 8*
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O0 -S test.c -o test_O0.s
+
+# ⚡ Compile with -O2 (high-level optimizations)
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O2 -S test.c -o test_O2.s
+
+# 🔍 View differences in assembly
+code test_O0.s test_O2.s
 
 ---
 ## Output Screenshot
 ![0](https://github.com/user-attachments/assets/d1b1b9bd-1fc4-403d-9a17-adefd6a5c47c)
-![0](https://github.com/user-attachments/assets/33da8719-577c-4af4-91fb-c316f0242ad7)
+
 
 ## Task 9: Cycle Counter and Performance Testing
 
@@ -7902,8 +7908,140 @@ riscv32-unknown-elf-gcc -o gpio_demo.elf gpio_demo.c -march=rv32imac_zicsr_zicnt
 spike --isa=rv32imac_zicntr $HOME/riscv_custom_tools/riscv32-unknown-elf/bin/pk gpio_demo.elf
 ```
 
-**Note:** gpio_demo.c code to be attached.
+**Gpio.c content**
+```c
+#include <stdint.h>
+#include <stdio.h>
 
+// GPIO register address
+#define GPIO_BASE_ADDR    0x10012000
+#define GPIO_OUTPUT_REG   (GPIO_BASE_ADDR + 0x08)  // Typical output register offset
+#define GPIO_DIRECTION    (GPIO_BASE_ADDR + 0x04)  // Direction register
+#define GPIO_INPUT_EN     (GPIO_BASE_ADDR + 0x00)  // Input enable
+
+// Method 1: Using volatile pointer (RECOMMENDED)
+static inline void gpio_write_volatile(uint32_t addr, uint32_t value) {
+    volatile uint32_t *reg = (volatile uint32_t *)addr;
+    *reg = value;
+}
+
+static inline uint32_t gpio_read_volatile(uint32_t addr) {
+    volatile uint32_t *reg = (volatile uint32_t *)addr;
+    return *reg;
+}
+
+// Method 2: Using inline assembly (MOST ROBUST)
+static inline void gpio_write_asm(uint32_t addr, uint32_t value) {
+    asm volatile (
+        "sw %1, 0(%0)"          // Store word: sw rs2, offset(rs1)
+        :                       // No outputs
+        : "r"(addr), "r"(value) // Inputs: address in register, value in register  
+        : "memory"              // Memory clobber - prevents reordering
+    );
+}
+
+static inline uint32_t gpio_read_asm(uint32_t addr) {
+    uint32_t value;
+    asm volatile (
+        "lw %0, 0(%1)"          // Load word: lw rd, offset(rs1)
+        : "=r"(value)           // Output: value in register
+        : "r"(addr)             // Input: address in register
+        : "memory"              // Memory clobber
+    );
+    return value;
+}
+
+// Method 3: Memory barrier functions (ALTERNATIVE)
+static inline void memory_barrier(void) {
+    asm volatile ("fence" ::: "memory");
+}
+
+void gpio_toggle_demo(void) {
+    printf("=== GPIO Toggle Demo ===\n");
+    printf("GPIO Base Address: 0x%08X\n", GPIO_BASE_ADDR);
+    
+    // Method 1: Using volatile pointers
+    printf("\n--- Method 1: Volatile Pointers ---\n");
+    
+    // Configure GPIO direction (set as output)
+    gpio_write_volatile(GPIO_DIRECTION, 0xFFFFFFFF);  // All pins as output
+    
+    // Read current state
+    uint32_t current_state = gpio_read_volatile(GPIO_OUTPUT_REG);
+    printf("Current GPIO state: 0x%08X\n", current_state);
+    
+    // Toggle all bits
+    uint32_t new_state = ~current_state;
+    gpio_write_volatile(GPIO_OUTPUT_REG, new_state);
+    printf("Toggled GPIO state: 0x%08X\n", new_state);
+    
+    // Method 2: Using inline assembly
+    printf("\n--- Method 2: Inline Assembly ---\n");
+    
+    // Read using assembly
+    uint32_t asm_state = gpio_read_asm(GPIO_OUTPUT_REG);
+    printf("Assembly read state: 0x%08X\n", asm_state);
+    
+    // Toggle using assembly
+    gpio_write_asm(GPIO_OUTPUT_REG, ~asm_state);
+    printf("Assembly toggled to: 0x%08X\n", ~asm_state);
+    
+    // Method 3: Specific bit manipulation
+    printf("\n--- Method 3: Bit Manipulation ---\n");
+    
+    // Toggle specific bits (e.g., bits 0, 1, 2)
+    uint32_t mask = 0x07;  // Bits 2:0
+    current_state = gpio_read_volatile(GPIO_OUTPUT_REG);
+    new_state = current_state ^ mask;  // XOR to toggle
+    gpio_write_volatile(GPIO_OUTPUT_REG, new_state);
+    printf("Toggled bits 2:0 from 0x%08X to 0x%08X\n", current_state, new_state);
+}
+
+// Demonstration of different toggle patterns
+void gpio_pattern_demo(void) {
+    printf("\n=== GPIO Pattern Demo ===\n");
+    
+    uint32_t patterns[] = {
+        0x55555555,  // Alternating pattern
+        0xAAAAAAAA,  // Inverse alternating
+        0xFF00FF00,  // Byte alternating
+        0x00000000,  // All off
+        0xFFFFFFFF   // All on
+    };
+    
+    int num_patterns = sizeof(patterns) / sizeof(patterns[0]);
+    
+    for (int i = 0; i < num_patterns; i++) {
+        printf("Setting pattern %d: 0x%08X\n", i, patterns[i]);
+        gpio_write_volatile(GPIO_OUTPUT_REG, patterns[i]);
+        
+        // Add a small delay (cycle counting)
+        for (volatile int delay = 0; delay < 1000; delay++);
+        
+        // Verify the write
+        uint32_t readback = gpio_read_volatile(GPIO_OUTPUT_REG);
+        printf("Readback: 0x%08X %s\n", readback, 
+               (readback == patterns[i]) ? "✓" : "✗");
+    }
+}
+
+int main(void) {
+    printf("=== RISC-V Memory-Mapped I/O Demo ===\n");
+    printf("Target: GPIO at 0x10012000\n\n");
+    
+    // Note: In Spike simulation, this address might not be mapped
+    // The demo shows the correct techniques even if hardware isn't present
+    
+    gpio_toggle_demo();
+    gpio_pattern_demo();
+    
+    printf("\n=== Demo Complete ===\n");
+    printf("Note: In Spike simulation, GPIO hardware may not respond,\n");
+    printf("but the memory operations are performed correctly.\n");
+    
+    return 0;
+}
+```
 ---
 ## Output Screenshot
 ![0](https://github.com/user-attachments/assets/19d4a74c-fa7b-47b2-a375-b03136a79940)
