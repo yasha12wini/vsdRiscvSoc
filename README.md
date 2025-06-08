@@ -7825,48 +7825,57 @@ riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -nostdlib -T linker.ld -o ba
 ![0](https://github.com/user-attachments/assets/1bfe6e9c-a549-4a03-a721-6dc83cb12657)
 
 ## Task 8:Compare -O0 vs -O2 Optimization in RISC-V
-🛠️ Compiling with Different Optimization Levels
-bash# Compile with no optimizations (-O0)
+## Task 8: Compare `-O0` vs `-O2` Optimization in RISC-V
+
+### 🛠️ Compiling with Different Optimization Levels
+
+```bash
+# Compile with no optimizations (-O0)
 riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O0 -S test.c -o test_O0.s
 
 # Compile with high-level optimizations (-O2)
 riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O2 -S test.c -o test_O2.s
-🔍 What to Observe in Assembly (test_O0.s vs test_O2.s)
+```
 
--O0:
+### 🔍 What to Observe in Assembly (`test_O0.s` vs `test_O2.s`)
 
-Preserves all code exactly as written
-Includes full function calls, stack setup, and variable usage
-Useful for debugging and step-by-step learning
+* **`-O0`:**
+   * Preserves all code exactly as written
+   * Includes full function calls, stack setup, and variable usage
+   * Useful for debugging and step-by-step learning
 
+* **`-O2`:**
+   * Optimizes the code for performance
+   * Performs several optimizations:
+      * 🔸 *Dead Code Elimination*: removes unused variables or expressions
+      * 🔸 *Inlining*: replaces small function calls with their code body
+      * 🔸 *Register Allocation*: minimizes stack use by using registers efficiently
 
--O2:
+### 📄 Open Both Assembly Files Side-by-Side in VS Code
 
-Optimizes the code for performance
-Performs several optimizations:
+```bash
+code test_O0.s test_O2.s
+```
 
-🔸 Dead Code Elimination: removes unused variables or expressions
-🔸 Inlining: replaces small function calls with their code body
-🔸 Register Allocation: minimizes stack use by using registers efficiently
+### Analysis Tips
+1. **Count the instructions**: `-O2` typically produces fewer instructions
+2. **Check stack usage**: Look for differences in stack pointer manipulation
+3. **Function calls**: Notice if small functions are inlined in the `-O2` version
+4. **Register usage**: `-O2` should show more efficient register allocation
+5. **Loop optimizations**: Look for loop unrolling or other loop optimizations
 
+### Expected Differences
 
-
-
-
-📄 Open Both Assembly Files Side-by-Side in VS Code
-bashcode test_O0.s test_O2.s
-Analysis Tips
-
-Count the instructions: -O2 typically produces fewer instructions
-Check stack usage: Look for differences in stack pointer manipulation
-Function calls: Notice if small functions are inlined in the -O2 version
-Register usage: -O2 should show more efficient register allocation
-Loop optimizations: Look for loop unrolling or other loop optimizations
-
-Expected Differences
-Aspect-O0-O2Code SizeLargerSmaller (usually)ReadabilityHighLowerDebug InfoCompleteOptimized awayPerformanceSlowerFasterCompilation TimeFastSlower
+| Aspect | `-O0` | `-O2` |
+|--------|-------|-------|
+| Code Size | Larger | Smaller (usually) |
+| Readability | High | Lower |
+| Debug Info | Complete | Optimized away |
+| Performance | Slower | Faster |
+| Compilation Time | Fast | Slower |
 
 ---
+
 ## Output Screenshot
 ![0](https://github.com/user-attachments/assets/d1b1b9bd-1fc4-403d-9a17-adefd6a5c47c)
 
@@ -8123,6 +8132,201 @@ SECTIONS
     }
 }
 ```
+
+### Basic Linker Script (`linker.ld`)
+
+```ld
+ENTRY(_start)
+
+MEMORY {
+    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 64K
+    RAM (rwx)  : ORIGIN = 0x10000000, LENGTH = 8K
+}
+
+SECTIONS {
+    .text : {
+        *(.text*)
+        *(.rodata*)
+    } > FLASH
+    
+    __data_load_start = LOADADDR(.data);
+    
+    .data : {
+        __data_start = .;
+        *(.data*)
+        *(.sdata*)
+        __data_end = .;
+    } > RAM AT > FLASH
+    
+    .bss : {
+        __bss_start = .;
+        *(.bss*)
+        *(.sbss*)
+        __bss_end = .;
+    } > RAM
+}
+```
+
+### Linker Script Explanation
+
+#### Memory Layout
+- **FLASH**: Code and constants stored in non-volatile memory
+  - Origin: `0x00000000` 
+  - Size: `64K` (65,536 bytes)
+  - Permissions: `rx` (read + execute)
+
+- **RAM**: Variables and stack in volatile memory  
+  - Origin: `0x10000000`
+  - Size: `8K` (8,192 bytes)
+  - Permissions: `rwx` (read + write + execute)
+
+#### Section Mapping
+
+##### `.text` Section
+```ld
+.text : {
+    *(.text*)     // All code sections
+    *(.rodata*)   // All read-only data (constants, strings)
+} > FLASH
+```
+- Contains executable code and constants
+- Stored in FLASH memory
+- Automatically loaded at startup
+
+##### `.data` Section  
+```ld
+__data_load_start = LOADADDR(.data);
+
+.data : {
+    __data_start = .;
+    *(.data*)     // Initialized global variables
+    *(.sdata*)    // Small initialized data
+    __data_end = .;
+} > RAM AT > FLASH
+```
+- Contains initialized global/static variables
+- **Stored in FLASH** but **copied to RAM** at startup
+- Requires startup code to copy from FLASH to RAM
+
+##### `.bss` Section
+```ld
+.bss : {
+    __bss_start = .;
+    *(.bss*)      // Uninitialized global variables  
+    *(.sbss*)     // Small uninitialized data
+    __bss_end = .;
+} > RAM
+```
+- Contains uninitialized global/static variables
+- Located in RAM only
+- Must be zero-initialized by startup code
+
+### Usage with GCC
+
+#### Compile and Link
+```bash
+# Compile source files
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -c main.c -o main.o
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -c startup.s -o startup.o
+
+# Link with custom linker script
+riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -nostartfiles \
+    -T linker.ld main.o startup.o -o program.elf
+```
+
+#### Required Startup Code Symbols
+Your startup assembly must handle data copying:
+
+```assembly
+# startup.s example
+.globl _start
+_start:
+    # Copy .data section from FLASH to RAM
+    la t0, __data_load_start  # Source address in FLASH
+    la t1, __data_start       # Destination address in RAM  
+    la t2, __data_end         # End of data section
+    
+copy_data:
+    beq t1, t2, zero_bss      # If start == end, skip
+    lw t3, 0(t0)              # Load from FLASH
+    sw t3, 0(t1)              # Store to RAM
+    addi t0, t0, 4            # Increment source
+    addi t1, t1, 4            # Increment destination
+    j copy_data
+    
+zero_bss:
+    # Zero .bss section
+    la t0, __bss_start
+    la t1, __bss_end
+    
+clear_bss:
+    beq t0, t1, main_call
+    sw zero, 0(t0)
+    addi t0, t0, 4
+    j clear_bss
+    
+main_call:
+    call main                 # Jump to main function
+```
+
+### Memory Map Verification
+
+#### Check Section Addresses
+```bash
+# View section information
+riscv32-unknown-elf-objdump -h program.elf
+
+# Check symbol addresses  
+riscv32-unknown-elf-nm program.elf | grep -E "__(data|bss)_"
+```
+
+#### Expected Output
+```
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         00001000  00000000  00000000  00001000  2**2
+  1 .data         00000100  10000000  00001000  00002000  2**2  
+  2 .bss          00000200  10000100  10000100  00000000  2**2
+```
+
+### Customization Notes
+
+#### Adjust Memory Sizes
+```ld
+MEMORY {
+    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 128K  // Increase FLASH
+    RAM (rwx)  : ORIGIN = 0x10000000, LENGTH = 32K   // Increase RAM  
+}
+```
+
+#### Add Stack and Heap
+```ld
+SECTIONS {
+    /* ... existing sections ... */
+    
+    .heap : {
+        __heap_start = .;
+        . += 0x1000;          // 4KB heap
+        __heap_end = .;
+    } > RAM
+    
+    .stack : {
+        . += 0x800;           // 2KB stack  
+        __stack_top = .;
+    } > RAM
+}
+```
+
+#### RISC-V Specific Sections
+```ld
+.text : {
+    *(.text.init)             // Initialization code first
+    *(.text*)
+    *(.rodata*)
+} > FLASH
+```
+
+---
 
 ### Compile and Analyze
 ```bash
@@ -8567,253 +8771,8 @@ echo 'export PATH=$HOME/riscv_custom_tools/bin:$PATH' >> ~/.bashrc
 
 ---
 
-## Task 8: Compare `-O0` vs `-O2` Optimization in RISC-V
-
-### 🛠️ Compiling with Different Optimization Levels
-
-```bash
-# Compile with no optimizations (-O0)
-riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O0 -S test.c -o test_O0.s
-
-# Compile with high-level optimizations (-O2)
-riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O2 -S test.c -o test_O2.s
-```
-
-### 🔍 What to Observe in Assembly (`test_O0.s` vs `test_O2.s`)
-
-* **`-O0`:**
-   * Preserves all code exactly as written
-   * Includes full function calls, stack setup, and variable usage
-   * Useful for debugging and step-by-step learning
-
-* **`-O2`:**
-   * Optimizes the code for performance
-   * Performs several optimizations:
-      * 🔸 *Dead Code Elimination*: removes unused variables or expressions
-      * 🔸 *Inlining*: replaces small function calls with their code body
-      * 🔸 *Register Allocation*: minimizes stack use by using registers efficiently
-
-### 📄 Open Both Assembly Files Side-by-Side in VS Code
-
-```bash
-code test_O0.s test_O2.s
-```
-
-### Analysis Tips
-1. **Count the instructions**: `-O2` typically produces fewer instructions
-2. **Check stack usage**: Look for differences in stack pointer manipulation
-3. **Function calls**: Notice if small functions are inlined in the `-O2` version
-4. **Register usage**: `-O2` should show more efficient register allocation
-5. **Loop optimizations**: Look for loop unrolling or other loop optimizations
-
-### Expected Differences
-
-| Aspect | `-O0` | `-O2` |
-|--------|-------|-------|
-| Code Size | Larger | Smaller (usually) |
-| Readability | High | Lower |
-| Debug Info | Complete | Optimized away |
-| Performance | Slower | Faster |
-| Compilation Time | Fast | Slower |
-
----
 
 ## RISC-V Linker Script Template
-
-### Basic Linker Script (`linker.ld`)
-
-```ld
-ENTRY(_start)
-
-MEMORY {
-    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 64K
-    RAM (rwx)  : ORIGIN = 0x10000000, LENGTH = 8K
-}
-
-SECTIONS {
-    .text : {
-        *(.text*)
-        *(.rodata*)
-    } > FLASH
-    
-    __data_load_start = LOADADDR(.data);
-    
-    .data : {
-        __data_start = .;
-        *(.data*)
-        *(.sdata*)
-        __data_end = .;
-    } > RAM AT > FLASH
-    
-    .bss : {
-        __bss_start = .;
-        *(.bss*)
-        *(.sbss*)
-        __bss_end = .;
-    } > RAM
-}
-```
-
-### Linker Script Explanation
-
-#### Memory Layout
-- **FLASH**: Code and constants stored in non-volatile memory
-  - Origin: `0x00000000` 
-  - Size: `64K` (65,536 bytes)
-  - Permissions: `rx` (read + execute)
-
-- **RAM**: Variables and stack in volatile memory  
-  - Origin: `0x10000000`
-  - Size: `8K` (8,192 bytes)
-  - Permissions: `rwx` (read + write + execute)
-
-#### Section Mapping
-
-##### `.text` Section
-```ld
-.text : {
-    *(.text*)     // All code sections
-    *(.rodata*)   // All read-only data (constants, strings)
-} > FLASH
-```
-- Contains executable code and constants
-- Stored in FLASH memory
-- Automatically loaded at startup
-
-##### `.data` Section  
-```ld
-__data_load_start = LOADADDR(.data);
-
-.data : {
-    __data_start = .;
-    *(.data*)     // Initialized global variables
-    *(.sdata*)    // Small initialized data
-    __data_end = .;
-} > RAM AT > FLASH
-```
-- Contains initialized global/static variables
-- **Stored in FLASH** but **copied to RAM** at startup
-- Requires startup code to copy from FLASH to RAM
-
-##### `.bss` Section
-```ld
-.bss : {
-    __bss_start = .;
-    *(.bss*)      // Uninitialized global variables  
-    *(.sbss*)     // Small uninitialized data
-    __bss_end = .;
-} > RAM
-```
-- Contains uninitialized global/static variables
-- Located in RAM only
-- Must be zero-initialized by startup code
-
-### Usage with GCC
-
-#### Compile and Link
-```bash
-# Compile source files
-riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -c main.c -o main.o
-riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -c startup.s -o startup.o
-
-# Link with custom linker script
-riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -nostartfiles \
-    -T linker.ld main.o startup.o -o program.elf
-```
-
-#### Required Startup Code Symbols
-Your startup assembly must handle data copying:
-
-```assembly
-# startup.s example
-.globl _start
-_start:
-    # Copy .data section from FLASH to RAM
-    la t0, __data_load_start  # Source address in FLASH
-    la t1, __data_start       # Destination address in RAM  
-    la t2, __data_end         # End of data section
-    
-copy_data:
-    beq t1, t2, zero_bss      # If start == end, skip
-    lw t3, 0(t0)              # Load from FLASH
-    sw t3, 0(t1)              # Store to RAM
-    addi t0, t0, 4            # Increment source
-    addi t1, t1, 4            # Increment destination
-    j copy_data
-    
-zero_bss:
-    # Zero .bss section
-    la t0, __bss_start
-    la t1, __bss_end
-    
-clear_bss:
-    beq t0, t1, main_call
-    sw zero, 0(t0)
-    addi t0, t0, 4
-    j clear_bss
-    
-main_call:
-    call main                 # Jump to main function
-```
-
-### Memory Map Verification
-
-#### Check Section Addresses
-```bash
-# View section information
-riscv32-unknown-elf-objdump -h program.elf
-
-# Check symbol addresses  
-riscv32-unknown-elf-nm program.elf | grep -E "__(data|bss)_"
-```
-
-#### Expected Output
-```
-Sections:
-Idx Name          Size      VMA       LMA       File off  Algn
-  0 .text         00001000  00000000  00000000  00001000  2**2
-  1 .data         00000100  10000000  00001000  00002000  2**2  
-  2 .bss          00000200  10000100  10000100  00000000  2**2
-```
-
-### Customization Notes
-
-#### Adjust Memory Sizes
-```ld
-MEMORY {
-    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 128K  // Increase FLASH
-    RAM (rwx)  : ORIGIN = 0x10000000, LENGTH = 32K   // Increase RAM  
-}
-```
-
-#### Add Stack and Heap
-```ld
-SECTIONS {
-    /* ... existing sections ... */
-    
-    .heap : {
-        __heap_start = .;
-        . += 0x1000;          // 4KB heap
-        __heap_end = .;
-    } > RAM
-    
-    .stack : {
-        . += 0x800;           // 2KB stack  
-        __stack_top = .;
-    } > RAM
-}
-```
-
-#### RISC-V Specific Sections
-```ld
-.text : {
-    *(.text.init)             // Initialization code first
-    *(.text*)
-    *(.rodata*)
-} > FLASH
-```
-
----
 
 ## Using Newlib printf Without an OS
 
