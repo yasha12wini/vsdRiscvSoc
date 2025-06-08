@@ -28,7 +28,7 @@ echo 'export PATH=$HOME/riscv_custom_tools/bin:$PATH' >> ~/.bashrc
 ---
 
 ## Task 1: 
-Absolutely! Here's a clean, copy-paste-ready set of commands to **unpack**, **set up**, and **verify** the RISC-V RV32IMAC toolchain for your GitHub README:
+
 
 ---
 
@@ -59,7 +59,7 @@ riscv32-unknown-elf-gdb --version
 export PATH=$HOME/<your-toolchain-folder>/bin:$PATH
 ```
 
-Let me know if you'd like a similar block for running on Spike or compiling C programs for RV32.
+
 
 
 ---
