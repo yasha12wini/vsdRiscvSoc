@@ -108,7 +108,7 @@ riscv32-unknown-elf-gcc -march=rv32imc -mabi=ilp32 -o hello.elf hello.c
 ## Output Screenshot
 ![0](https://github.com/user-attachments/assets/8bdb3ca3-ad3d-4b86-848c-5c8b198e3af0)
 
-https://github.com/user-attachments/assets/d628f1cc-7836-409e-b105-50ff5acd08ac
+
 
 ## Task 3: Generate Assembly Code
 
