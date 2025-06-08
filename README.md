@@ -8420,8 +8420,66 @@ riscv32-unknown-linux-gnu-gcc -static -pthread -o atomic_counter atomic_counter.
 qemu-riscv32 ./atomic_counter
 ```
 
-**Note:** atomic_test.s, lr_sc_test.s, and atomic_counter.c codes to be attached.
 
+# atomic_test.s
+.text
+.globl _start
+_start:
+    # Test atomic add
+    li t0, 0x1000        # Load address
+    li t1, 5             # Value to add
+    amoadd.w t2, t1, (t0) # Atomic add, result in t2
+    
+    # Exit system call
+    li a7, 93            # exit syscall number
+    li a0, 0             # exit status
+    ecall
+
+# lr_sc_test.s
+.text
+.globl _start
+_start:
+    li t0, 0x1000        # Memory address
+    li t1, 42            # Initial value
+    sw t1, 0(t0)         # Store initial value
+    
+retry:
+    lr.w t2, (t0)        # Load reserved
+    addi t2, t2, 1       # Increment
+    sc.w t3, t2, (t0)    # Store conditional
+    bnez t3, retry       # Retry if failed
+    
+    # Exit
+    li a7, 93
+    li a0, 0
+    ecall
+// atomic_counter.c
+#include <pthread.h>
+#include <stdio.h>
+
+volatile int counter = 0;
+
+void* increment_atomic(void* arg) {
+    for(int i = 0; i < 1000; i++) {
+        __sync_fetch_and_add(&counter, 1);  // Uses amoadd.w
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t threads[4];
+    
+    for(int i = 0; i < 4; i++) {
+        pthread_create(&threads[i], NULL, increment_atomic, NULL);
+    }
+    
+    for(int i = 0; i < 4; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    
+    printf("Final counter value: %d\n", counter);
+    return 0;
+}
 ---
 ## Output ScreenShot
 ![0](https://github.com/user-attachments/assets/9e220505-176a-475b-b3a5-41b7a9c53d8b)
