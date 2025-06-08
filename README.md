@@ -8723,8 +8723,265 @@ for i in {1..3}; do
     echo ""
 done
 ```
+#include <stdio.h>
+#include <stdint.h>
+#include <unistd.h>
 
-**Note:** rv32_mutex.c and rv32_mutex_concurrent.c codes to be attached.
+// Mutex state: 0 = unlocked, 1 = locked
+volatile uint32_t mutex = 0;
+volatile int shared_counter = 0;
+
+// Inline assembly function to acquire mutex using lr/sc
+static inline int mutex_trylock(volatile uint32_t *lock) {
+    uint32_t tmp, success;
+    
+    __asm__ volatile (
+        "1: lr.w    %0, (%2)        \n"  // Load reserved
+        "   bnez    %0, 2f          \n"  // If already locked, fail
+        "   li      %0, 1           \n"  // Set lock value to 1
+        "   sc.w    %1, %0, (%2)    \n"  // Store conditional
+        "   bnez    %1, 1b          \n"  // If sc failed, retry
+        "   li      %1, 0           \n"  // Success: return 0
+        "   j       3f              \n"  // Jump to end
+        "2: li      %1, 1           \n"  // Failure: return 1
+        "3:                         \n"
+        : "=&r" (tmp), "=&r" (success)
+        : "r" (lock)
+        : "memory"
+    );
+    
+    return success;
+}
+
+// Spin-lock acquire function
+void mutex_lock(volatile uint32_t *lock) {
+    printf("Thread attempting to acquire lock...\n");
+    while (mutex_trylock(lock)) {
+        // Spin until we get the lock
+        usleep(1000); // Small delay to reduce CPU usage
+    }
+    printf("Lock acquired!\n");
+}
+
+// Mutex release function
+void mutex_unlock(volatile uint32_t *lock) {
+    __asm__ volatile (
+        "fence      \n"              // Memory fence
+        "sw         zero, (%0) \n"   // Store 0 to unlock
+        :
+        : "r" (lock)
+        : "memory"
+    );
+    printf("Lock released!\n");
+}
+
+// Critical section function
+void critical_section(int thread_id) {
+    printf("Thread %d entering critical section\n", thread_id);
+    
+    // Simulate some work in critical section
+    for (int i = 0; i < 5; i++) {
+        shared_counter++;
+        printf("Thread %d: shared_counter = %d\n", thread_id, shared_counter);
+        usleep(100000); // 100ms delay
+    }
+    
+    printf("Thread %d leaving critical section\n", thread_id);
+}
+
+// Pseudo-thread function 1
+void pseudo_thread_1() {
+    printf("\n=== PSEUDO THREAD 1 STARTING ===\n");
+    
+    mutex_lock(&mutex);
+    critical_section(1);
+    mutex_unlock(&mutex);
+    
+    printf("=== PSEUDO THREAD 1 FINISHED ===\n");
+}
+
+// Pseudo-thread function 2  
+void pseudo_thread_2() {
+    printf("\n=== PSEUDO THREAD 2 STARTING ===\n");
+    
+    mutex_lock(&mutex);
+    critical_section(2);
+    mutex_unlock(&mutex);
+    
+    printf("=== PSEUDO THREAD 2 FINISHED ===\n");
+}
+
+int main() {
+    printf("RV32 Mutex Demo using Load-Reserved/Store-Conditional\n");
+    printf("=====================================================\n");
+    printf("Initial mutex state: %u\n", mutex);
+    printf("Initial shared_counter: %d\n\n", shared_counter);
+    
+    // Simulate two threads running sequentially
+    // In a real implementation, these would run concurrently
+    
+    printf("Starting pseudo-thread execution...\n");
+    
+    // First pseudo-thread
+    pseudo_thread_1();
+    
+    // Small delay between threads
+    usleep(500000); // 500ms
+    
+    // Second pseudo-thread
+    pseudo_thread_2();
+    
+    printf("\n=== FINAL RESULTS ===\n");
+    printf("Final mutex state: %u\n", mutex);
+    printf("Final shared_counter: %d\n", shared_counter);
+    printf("Expected shared_counter: 10\n");
+    
+    if (shared_counter == 10) {
+        printf("SUCCESS: Mutex worked correctly!\n");
+    } else {
+        printf("ERROR: Race condition detected!\n");
+    }
+    
+    return 0;
+}
+
+#include <stdio.h>
+#include <stdint.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <time.h>
+
+// Mutex state: 0 = unlocked, 1 = locked
+volatile uint32_t mutex = 0;
+volatile int shared_counter = 0;
+volatile int operations_count = 0;
+
+// Inline assembly function to acquire mutex using lr/sc
+static inline int mutex_trylock(volatile uint32_t *lock) {
+    uint32_t tmp, success;
+    
+    __asm__ volatile (
+        "1: lr.w    %0, (%2)        \n"  // Load reserved from lock address
+        "   bnez    %0, 2f          \n"  // If lock != 0 (locked), jump to fail
+        "   li      %0, 1           \n"  // Load immediate 1 into tmp
+        "   sc.w    %1, %0, (%2)    \n"  // Store conditional: if reservation valid, store 1
+        "   bnez    %1, 1b          \n"  // If sc.w failed (returned 1), retry from lr.w
+        "   li      %1, 0           \n"  // Success: set return value to 0
+        "   j       3f              \n"  // Jump to end
+        "2: li      %1, 1           \n"  // Failure: set return value to 1
+        "3:                         \n"  // End label
+        : "=&r" (tmp), "=&r" (success)   // Output: tmp and success are scratch registers
+        : "r" (lock)                     // Input: lock address
+        : "memory"                       // Clobber: memory barrier
+    );
+    
+    return success;
+}
+
+// Spin-lock acquire function
+void mutex_lock(volatile uint32_t *lock) {
+    int attempts = 0;
+    while (mutex_trylock(lock)) {
+        attempts++;
+        usleep(1000); // 1ms delay to reduce CPU usage
+    }
+    printf("Lock acquired after %d attempts\n", attempts);
+}
+
+// Mutex release function using memory fence
+void mutex_unlock(volatile uint32_t *lock) {
+    __asm__ volatile (
+        "fence      \n"              // Full memory fence for ordering
+        "sw         zero, (%0) \n"   // Store 0 to release lock
+        :
+        : "r" (lock)
+        : "memory"
+    );
+}
+
+// Thread function that uses the mutex
+void* thread_function(void* arg) {
+    int thread_id = *(int*)arg;
+    
+    printf("Thread %d starting...\n", thread_id);
+    
+    for (int i = 0; i < 3; i++) {
+        printf("Thread %d attempting to acquire mutex (iteration %d)\n", thread_id, i+1);
+        
+        // Acquire mutex
+        mutex_lock(&mutex);
+        
+        printf("Thread %d: ENTERED CRITICAL SECTION\n", thread_id);
+        
+        // Critical section - modify shared data
+        int local_counter = shared_counter;
+        usleep(50000); // 50ms - simulate some work
+        local_counter++;
+        shared_counter = local_counter;
+        operations_count++;
+        
+        printf("Thread %d: shared_counter = %d, operations = %d\n", 
+               thread_id, shared_counter, operations_count);
+        
+        usleep(100000); // 100ms more work
+        
+        printf("Thread %d: LEAVING CRITICAL SECTION\n", thread_id);
+        
+        // Release mutex
+        mutex_unlock(&mutex);
+        
+        // Some work outside critical section
+        usleep(50000); // 50ms
+    }
+    
+    printf("Thread %d finished\n", thread_id);
+    return NULL;
+}
+
+int main() {
+    pthread_t thread1, thread2;
+    int tid1 = 1, tid2 = 2;
+    
+    printf("RV32 Concurrent Mutex Demo using Load-Reserved/Store-Conditional\n");
+    printf("================================================================\n");
+    printf("Initial mutex state: %u\n", mutex);
+    printf("Initial shared_counter: %d\n\n", shared_counter);
+    
+    // Create two threads
+    printf("Creating threads...\n");
+    
+    if (pthread_create(&thread1, NULL, thread_function, &tid1) != 0) {
+        perror("pthread_create thread1");
+        return 1;
+    }
+    
+    if (pthread_create(&thread2, NULL, thread_function, &tid2) != 0) {
+        perror("pthread_create thread2");
+        return 1;
+    }
+    
+    // Wait for both threads to complete
+    printf("Waiting for threads to complete...\n\n");
+    
+    pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
+    
+    printf("\n=== FINAL RESULTS ===\n");
+    printf("Final mutex state: %u\n", mutex);
+    printf("Final shared_counter: %d\n", shared_counter);
+    printf("Total operations: %d\n", operations_count);
+    printf("Expected values: counter=6, operations=6\n");
+    
+    if (shared_counter == 6 && operations_count == 6) {
+        printf("SUCCESS: Mutex protected critical section correctly!\n");
+        printf("No race conditions detected.\n");
+    } else {
+        printf("ERROR: Race condition may have occurred!\n");
+    }
+    
+    return 0;
+}
+
 
 ---
 ## Output ScreenShot
@@ -8935,7 +9192,7 @@ int main() {
 ---
 ## Output ScreenShot
 ![0](https://github.com/user-attachments/assets/5a357617-4b07-4b1b-93f3-8b774c809be2)
-
+```
 
 ## Task 17: Endianness Testing
 
