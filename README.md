@@ -7824,14 +7824,31 @@ riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -nostdlib -T linker.ld -o ba
 ## Output Screenshot
 ![0](https://github.com/user-attachments/assets/1bfe6e9c-a549-4a03-a721-6dc83cb12657)
 
-## Task 8: [Placeholder]
+## Task 8:Compare -O0 vs -O2 Optimization in RISC-V
+bash
+Copy code
+# Compile with no optimizations (O0)
 riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O0 -S test.c -o test_O0.s
 
-# ⚡ Compile with -O2 (high-level optimizations)
+# Compile with high-level optimizations (O2)
 riscv32-unknown-elf-gcc -march=rv32imac -mabi=ilp32 -O2 -S test.c -o test_O2.s
+🔍 What to Observe in Assembly (test_O0.s vs test_O2.s):
+-O0: Keeps all code as written. Function calls, stack usage, and variables are fully preserved.
 
-# 🔍 View differences in assembly
+-O2: Optimizes for performance:
+
+Dead Code Elimination: Removes unused variables or expressions.
+
+Inlining: Replaces small function calls with their body code.
+
+Register Allocation: Uses fewer stack operations by better register use.
+
+📄 Open both .s files side-by-side in VS Code:
+
+bash
+Copy code
 code test_O0.s test_O2.s
+
 
 ---
 ## Output Screenshot
